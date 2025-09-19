@@ -332,9 +332,28 @@ func packetsHandler(conn *websocket.Conn) {
 					continue
 				}
 				app.QueueUpdateDraw(func() {
-					fmt.Fprintf(chatView, "[yellow][%s[][green][%s[][white]: %s\n", userId.String()[:4], userInfo.Name, msg.Text)
+					fmt.Fprintf(chatView, "[yellow][%s[][green][%s[][white]: %s\n", recvPacket.GetOrigin().String()[:4], userInfo.Name, msg.Text)
 					chatView.ScrollToEnd()
 				})
+			case "pr_inf":
+				msg, err := protocol.ParsePresenseInfo(data)
+				if err != nil {
+					app.QueueUpdateDraw(func() {
+						fmt.Fprintf(logsView, "[red]failed to parse message: %s\n", err.Error())
+						logsView.ScrollToEnd()
+					})
+					continue
+				}
+				app.QueueUpdateDraw(func() {
+					fmt.Fprintf(logsView, "[red][SERVER[][white] USER [green][%s[] [red]%s[white] in chat\n", msg.UserID.String(), msg.Name)
+					logsView.ScrollToEnd()
+				})
+				if msg.UserID != userId {
+					usersInfo.Set(msg.UserID, &UserInfo{
+						Key:  nil,
+						Name: msg.Name,
+					})
+				}
 			}
 		}
 	}
