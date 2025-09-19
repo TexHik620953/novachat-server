@@ -41,7 +41,7 @@ func main() {
 		panic(fmt.Errorf("failed to generate keys pair: %w", err))
 	}
 
-	client, err := websocket.Dial("ws://localhost:8080/ws", "", "ws://localhost:123")
+	client, err := websocket.Dial("ws://150.241.114.101:8080/ws", "", "ws://150.241.114.101:123")
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +77,6 @@ func runApp() {
 		SetMaxLines(1)
 
 	header.SetBackgroundColor(tcell.ColorSilver)
-	header.SetText(fmt.Sprintf("[black]%s", name))
 
 	logsView = tview.NewTextView().
 		SetDynamicColors(true).
@@ -211,6 +210,7 @@ func packetsHandler(conn *websocket.Conn) {
 					continue
 				}
 				userId = msg.UserID
+				header.SetText(fmt.Sprintf("[black][%s[] %s", userId.String(), name))
 
 				app.QueueUpdateDraw(func() {
 					fmt.Fprintf(logsView, "[red][SERVER[][white] Your USERID: [green]%s\n", userId.String())
@@ -244,6 +244,20 @@ func packetsHandler(conn *websocket.Conn) {
 					logsView.ScrollToEnd()
 				})
 				if msg.UserID != userId {
+
+					pInfo, err := protocol.NewPresenseInfo(&protocol.PresenseInfo{
+						UserID: userId,
+						Name:   name,
+					})
+					if err != nil {
+						app.QueueUpdateDraw(func() {
+							fmt.Fprintf(logsView, "[red]failed to make message: %s\n", err.Error())
+							logsView.ScrollToEnd()
+						})
+						continue
+					}
+					sendChan <- protocol.NewPacket(msg.UserID, pInfo, protocol.PacketParams{})
+
 					usersInfo.Set(msg.UserID, &UserInfo{
 						Key:  nil,
 						Name: msg.Name,
@@ -318,7 +332,7 @@ func packetsHandler(conn *websocket.Conn) {
 					continue
 				}
 				app.QueueUpdateDraw(func() {
-					fmt.Fprintf(chatView, "[green][%s[][white]: %s\n", userInfo.Name, msg.Text)
+					fmt.Fprintf(chatView, "[yellow][%s[][green][%s[][white]: %s\n", userId.String()[:4], userInfo.Name, msg.Text)
 					chatView.ScrollToEnd()
 				})
 			}
