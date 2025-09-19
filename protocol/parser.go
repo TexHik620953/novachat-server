@@ -15,7 +15,7 @@ const (
 	HEADER_SIZE  = 4
 	POSTFIX_SIZE = 4
 
-	BUFFER_SIZE        = 5
+	BUFFER_SIZE        = 128
 	MESSAGE_SIZE_LIMIT = 10 * 1024 * 1024
 )
 
@@ -72,7 +72,7 @@ func ReadPacket(r io.Reader) (*Packet, error) {
 			targetRead = binary.LittleEndian.Uint32(buf[:4])
 		}
 
-		if n < len(buf) || n >= int(targetRead) {
+		if uint32(totalRead) >= targetRead {
 			break
 		}
 

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"novachat-server/common/safemap"
 	"novachat-server/protocol"
+	"time"
 
 	"github.com/google/uuid"
 	"golang.org/x/net/websocket"
@@ -45,7 +46,8 @@ func handleWebSocket(ws *websocket.Conn) {
 				break
 			}
 			log.Printf("failed to read packet: %s", err.Error())
-			continue
+			<-time.After(time.Millisecond * 10)
+			break
 		}
 		log.Printf("received message with data: %s\n", string(msg.Data))
 		broadcastMessage(msg)
