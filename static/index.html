@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #messages { border: 1px solid #ccc; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; }
+        .message { margin: 5px 0; padding: 5px; border-radius: 5px; }
+        .server { background-color: #e3f2fd; }
+        .client { background-color: #f3e5f5; }
+        .self { background-color: #e8f5e8; }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Test Client</h1>
+    
+    <div id="messages"></div>
+    
+    <input type="text" id="messageInput" placeholder="Введите сообщение..." style="width: 300px; padding: 8px;">
+    <button onclick="sendMessage()">Отправить</button>
+    <button onclick="connect()">Подключиться</button>
+    <button onclick="disconnect()">Отключиться</button>
+
+    <script>
+        let ws = null;
+        let clientId = null;
+
+        function connect() {
+            ws = new WebSocket('ws://localhost:8080/ws');
+            
+            ws.onopen = function() {
+                addMessage('Подключено к серверу', 'server');
+            };
+            
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                clientId = data.client_id || clientId;
+                
+                const messageClass = data.client_id === 'server' ? 'server' : 
+                                   data.client_id === clientId ? 'self' : 'client';
+                
+                addMessage(`${data.text} (от ${data.client_id})`, messageClass);
+            };
+            
+            ws.onclose = function() {
+                addMessage('Отключено от сервера', 'server');
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        function sendMessage() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const input = document.getElementById('messageInput');
+                const message = input.value;
+                
+                if (message) {
+                    ws.send(JSON.stringify({ text: message }));
+                    input.value = '';
+                }
+            }
+        }
+
+        function addMessage(text, className) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + className;
+            messageDiv.textContent = text;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Автоподключение при загрузке
+        window.onload = connect;
+
+        // Отправка по Enter
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
