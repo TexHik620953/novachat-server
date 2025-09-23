@@ -14,5 +14,5 @@ func ParseChatMessage(msg []byte) (*ChatMessage, error) {
 	return r.Data, nil
 }
 func NewChatMessage(msg *ChatMessage) ([]byte, error) {
-	return newMessage("ch_msg", msg)
+	return NewMessage("ch_msg", msg)
 }

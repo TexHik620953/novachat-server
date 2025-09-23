@@ -30,7 +30,7 @@ func ParsePresenseRequest(msg []byte) (*PresenseRequest, error) {
 	return r.Data, nil
 }
 func NewPresenseRequest(msg *PresenseRequest) ([]byte, error) {
-	return newMessage("pr_req", msg)
+	return NewMessage("pr_req", msg)
 }
 
 func ParsePresenseResponse(msg []byte) (*PresenseResponse, error) {
@@ -41,7 +41,7 @@ func ParsePresenseResponse(msg []byte) (*PresenseResponse, error) {
 	return r.Data, nil
 }
 func NewPresenseResponse(msg *PresenseResponse) ([]byte, error) {
-	return newMessage("pr_res", msg)
+	return NewMessage("pr_res", msg)
 }
 
 func ParsePresenseInfo(msg []byte) (*PresenseInfo, error) {
@@ -52,5 +52,5 @@ func ParsePresenseInfo(msg []byte) (*PresenseInfo, error) {
 	return r.Data, nil
 }
 func NewPresenseInfo(msg *PresenseInfo) ([]byte, error) {
-	return newMessage("pr_inf", msg)
+	return NewMessage("pr_inf", msg)
 }

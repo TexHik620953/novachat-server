@@ -22,7 +22,7 @@ func ParseMessageType(msg []byte) (string, error) {
 	return r.Type, nil
 }
 
-func newMessage[T any](msgType string, data T) ([]byte, error) {
+func NewMessage[T any](msgType string, data T) ([]byte, error) {
 	var sb strings.Builder
 	for _, k := range rand.Perm(len(randRunes)) {
 		sb.WriteByte(randRunes[k])

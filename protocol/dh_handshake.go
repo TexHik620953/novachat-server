@@ -42,5 +42,5 @@ func ParsePublicKeyMessage(msg []byte) (*PublicKeyMessage, error) {
 	return r.Data, nil
 }
 func NewPublicKeyMessage(msg *PublicKeyMessage) ([]byte, error) {
-	return newMessage("pub", msg)
+	return NewMessage("pub", msg)
 }

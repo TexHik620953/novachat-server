@@ -349,10 +349,15 @@ func packetsHandler(conn *websocket.Conn) {
 					logsView.ScrollToEnd()
 				})
 				if msg.UserID != userId {
-					usersInfo.Set(msg.UserID, &UserInfo{
-						Key:  nil,
-						Name: msg.Name,
-					})
+					uInfo, ex := usersInfo.Get(msg.UserID)
+					if !ex {
+						usersInfo.Set(msg.UserID, &UserInfo{
+							Key:  nil,
+							Name: msg.Name,
+						})
+					} else {
+						uInfo.Name = msg.Name
+					}
 				}
 			}
 		}
