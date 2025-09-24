@@ -51,6 +51,9 @@ type PublicKeyClient2Server struct {
 	Hash string `json:"hash,omitempty"`
 }
 
-type WelcomeServer2Client struct {
-	UserID uuid.UUID
+type WelcomeInviteServer2Client struct {
+	UserID uuid.UUID `json:"user_id"`
+}
+type WelcomeAcceptClient2Server struct {
+	Nickname string `json:"nickname"`
 }

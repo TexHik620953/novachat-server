@@ -14,7 +14,7 @@ import (
 
 // keyExchange performs Diffie-Hellman key exchange with mutual authentication
 func keyExchange(rw clientmanager.Client) ([]byte, error) {
-	for attempt := 0; attempt < maxRetryAttempts; attempt++ {
+	for attempt := 0; attempt < maxKeyExchangeRetryAttempts; attempt++ {
 		key, err := performSingleKeyExchange(rw)
 		if err != nil {
 			log.Printf("Key exchange attempt %d failed: %v", attempt+1, err)
@@ -23,7 +23,7 @@ func keyExchange(rw clientmanager.Client) ([]byte, error) {
 		return key, nil
 	}
 
-	return nil, fmt.Errorf("key exchange failed after %d attempts", maxRetryAttempts)
+	return nil, fmt.Errorf("key exchange failed after %d attempts", maxKeyExchangeRetryAttempts)
 }
 
 // performSingleKeyExchange handles one iteration of the key exchange protocol
@@ -121,23 +121,45 @@ func receivePublicKeyMessage(rw clientmanager.Client) (*big.Int, string, error) 
 	return clientPublicKey, publicKeyMsg.Hash, nil
 }
 
-func sendWelcomeMessage(client clientmanager.Client, encrypt novaprotocol.CryptFunc) error {
-	messageData, err := novaprotocol.NewJsonMessage(novaprotocol.MSG_WELCOME, &handshake.WelcomeServer2Client{
+func sendWelcomeInviteMessage(client clientmanager.Client) error {
+	messageData, err := novaprotocol.NewJsonMessage(novaprotocol.MSG_WELCOME_INVITE, &handshake.WelcomeInviteServer2Client{
 		UserID: client.GetID(),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create public key message: %w", err)
 	}
+	return respondJson(client, messageData)
+}
 
-	l1frame, err := novaprotocol.NewL1Frame(novaprotocol.L1FlagIsJson|novaprotocol.L1FlagIsEncrypted, messageData).Build(encrypt)
+func recvWelcomeAcceptMessage(client clientmanager.Client) (*handshake.WelcomeAcceptClient2Server, error) {
+	l0frame, err := novaprotocol.ReadL0Frame(client, client.Decrypt)
 	if err != nil {
-		return fmt.Errorf("failed to create l1 frame: %w", err)
+		return nil, fmt.Errorf("failed to read l0 frame: %w", err)
 	}
 
-	frame := novaprotocol.NewL0Frame(novaprotocol.L0FlagIsEncrypted, uuid.Nil, l1frame)
-	if err := frame.Write(client, nil); err != nil {
-		return fmt.Errorf("failed to write l0 frame: %w", err)
+	l1frame, err := novaprotocol.ParseL1Frame(l0frame.GetData(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read l1 frame: %w", err)
+	}
+	if l1frame.GetFlags()&novaprotocol.L1FlagIsJson == 0 {
+		return nil, fmt.Errorf("invalid data type")
 	}
 
-	return nil
+	// Validate message type
+	messageType, err := novaprotocol.ParseJsonMessageType(l1frame.GetData())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse message type: %w", err)
+	}
+
+	if messageType != novaprotocol.MSG_WELCOME_ACCEPT {
+		return nil, fmt.Errorf("unexpected message type: expected %s, got %s",
+			novaprotocol.MSG_DH_PUB, messageType)
+	}
+
+	// Parse message content
+	publicKeyMsg, err := novaprotocol.ParseJsonMessage[handshake.WelcomeAcceptClient2Server](l1frame.GetData())
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse message: %w", err)
+	}
+	return publicKeyMsg, nil
 }

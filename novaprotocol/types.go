@@ -8,8 +8,12 @@ const (
 )
 
 const (
-	MSG_DH_PUB  = "dh_pub"
-	MSG_WELCOME = "srv_welcome"
+	// Client->Server|Server->Client
+	MSG_DH_PUB = "dh_pub" // The only unencrypted message
+
+	MSG_WELCOME_INVITE = "srv_welcome_invite"
+	MSG_WELCOME_ACCEPT = "srv_welcome_accept"
+	MSG_LIST_CONN      = "srv_conn_list"
 )
 
 // CryptFunc represents encryption/decryption function signature
