@@ -6,6 +6,7 @@ import (
 	"log"
 	"novachat-server/internal/clientmanager"
 	"novachat-server/novaprotocol"
+	"novachat-server/novaprotocol/serverapi"
 
 	"github.com/google/uuid"
 )
@@ -20,7 +21,11 @@ func respondJson(client clientmanager.Client, jsonData []byte) error {
 	if err != nil {
 		return err
 	}
-	return novaprotocol.NewL0Frame(novaprotocol.L0FlagIsEncrypted, client.GetID(), l1).Write(client, client.Encrypt)
+
+	l0 := novaprotocol.NewL0Frame(novaprotocol.L0FlagIsEncrypted, client.GetID(), l1)
+	l0.SetOrigin(uuid.Nil)
+
+	return l0.Write(client, client.Encrypt)
 }
 
 // connectionHandler manages the entire client connection lifecycle
@@ -56,6 +61,49 @@ func (app *Application) connectionHandler(rw io.ReadWriteCloser) error {
 
 	// Send welcome message
 	log.Printf("successfully established secure connection with client: %s", client.GetID().String())
+
+	// Notify all clients about new client
+	{
+		msg, err := novaprotocol.NewJsonMessage(novaprotocol.MSG_NEW_CONNECTION, &serverapi.Client{
+			ID:       client.GetID(),
+			Nickname: client.GetNickname(),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to create message: %w", err)
+		}
+
+		for _, otherClient := range app.clientManager.ListClients() {
+			if otherClient != client {
+				err = respondJson(otherClient, msg)
+				if err != nil {
+					return fmt.Errorf("failed to send new connection: %w", err)
+				}
+			}
+		}
+	}
+	defer func() {
+		// Notify all clients about losing client
+		{
+			msg, err := novaprotocol.NewJsonMessage(novaprotocol.MSG_CONNECTION_LOST, &serverapi.Client{
+				ID:       client.GetID(),
+				Nickname: client.GetNickname(),
+			})
+			if err != nil {
+				log.Printf("failed to send connection lost message: %w", err)
+				return
+			}
+
+			for _, otherClient := range app.clientManager.ListClients() {
+				if otherClient != client {
+					err = respondJson(otherClient, msg)
+					if err != nil {
+						log.Printf("failed to send connection lost message: %w", err)
+						return
+					}
+				}
+			}
+		}
+	}()
 
 	// Main messaging cycle
 	for {
