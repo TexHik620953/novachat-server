@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"novachat-server/novaprotocol"
 	"testing"
-
-	"github.com/google/uuid"
 )
 
 func TestL1BuildParse(t *testing.T) {
@@ -18,8 +16,7 @@ func TestL1BuildParse(t *testing.T) {
 		return v, nil
 	}
 
-	frame := novaprotocol.NewL1Frame(novaprotocol.L0FlagIsEncrypted, uuid.Max, []byte("hello world"))
-	frame.SetOrigin(uuid.Max)
+	frame := novaprotocol.NewL1Frame(novaprotocol.L0FlagIsEncrypted, []byte("hello world"))
 
 	data, err := frame.Build(cryptFunc)
 	if err != nil {

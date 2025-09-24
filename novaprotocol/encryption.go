@@ -1,4 +1,4 @@
-package protocol
+package novaprotocol
 
 import (
 	"crypto/aes"
@@ -8,7 +8,17 @@ import (
 	"io"
 )
 
-func EncryptAES256(key []byte, plaintext []byte) ([]byte, error) {
+func NewCryptoFuncs(key []byte) (encrypt CryptFunc, decrypt CryptFunc) {
+	encrypt = func(b []byte) ([]byte, error) {
+		return encryptAES256(key, b)
+	}
+	decrypt = func(b []byte) ([]byte, error) {
+		return decryptAES256(key, b)
+	}
+	return encrypt, decrypt
+}
+
+func encryptAES256(key []byte, plaintext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
@@ -25,7 +35,7 @@ func EncryptAES256(key []byte, plaintext []byte) ([]byte, error) {
 	return ciphertext, nil
 }
 
-func DecryptAES256(key []byte, ciphertext []byte) ([]byte, error) {
+func decryptAES256(key []byte, ciphertext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err

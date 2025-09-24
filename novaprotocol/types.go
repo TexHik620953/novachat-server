@@ -7,6 +7,11 @@ const (
 	crcSize  = 4
 )
 
+const (
+	MSG_DH_PUB  = "dh_pub"
+	MSG_WELCOME = "srv_welcome"
+)
+
 // CryptFunc represents encryption/decryption function signature
 type CryptFunc func([]byte) ([]byte, error)
 

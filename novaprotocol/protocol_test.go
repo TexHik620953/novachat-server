@@ -10,7 +10,7 @@ import (
 
 var (
 	l0cryptFunc = func(a []byte) ([]byte, error) {
-		key := byte(10)
+		key := byte(77)
 		v := make([]byte, len(a))
 		for i, b := range a {
 			v[i] = b ^ key
@@ -18,7 +18,7 @@ var (
 		return v, nil
 	}
 	l1cryptFunc = func(a []byte) ([]byte, error) {
-		key := byte(0xfa)
+		key := byte(0xfd)
 		v := make([]byte, len(a))
 		for i, b := range a {
 			v[i] = b ^ key
@@ -30,13 +30,13 @@ var (
 func TestProtocol(t *testing.T) {
 	fFrameData := novaprotocol.NewFileBlockFrame(0, uuid.Max, []byte("hello world"))
 
-	l1FrameData, err := novaprotocol.NewL1Frame(novaprotocol.L1FlagIsEncrypted|novaprotocol.L1FlagIsFile, uuid.Nil, fFrameData).Build(l1cryptFunc)
+	l1FrameData, err := novaprotocol.NewL1Frame(novaprotocol.L1FlagIsEncrypted|novaprotocol.L1FlagIsFile, fFrameData).Build(l1cryptFunc)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	l0FrameData, err := novaprotocol.NewL0Frame(novaprotocol.L0FlagIsEncrypted, l1FrameData).Build(l0cryptFunc)
+	l0FrameData, err := novaprotocol.NewL0Frame(novaprotocol.L0FlagIsEncrypted, uuid.Nil, l1FrameData).Build(l0cryptFunc)
 	if err != nil {
 		t.Error(err)
 		return

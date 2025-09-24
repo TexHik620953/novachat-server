@@ -1,12 +1,16 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"novachat-server/common/safemap"
-	"novachat-server/protocol"
+	"novachat-server/internal/application"
+	"novachat-server/internal/config"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,6 +27,28 @@ type Client struct {
 var clients = safemap.New[uuid.UUID, *Client]()
 
 func main() {
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer cancel()
+
+	cfg, err := config.LoadAppConfig()
+	if err != nil {
+		log.Fatalf("failed to load config: %s", err.Error())
+		return
+	}
+
+	app, err := application.NewApplication(ctx, cfg)
+	if err != nil {
+		log.Fatalf("failed to create application: %s", err.Error())
+		return
+	}
+
+	app.Start()
+	if err != nil {
+		log.Fatalf("failed to start application: %s", err.Error())
+		return
+	}
+
+	<-ctx.Done()
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 	http.Handle("/ws", websocket.Handler(handleWebSocket))
 	log.Println("server started on port :8080")
